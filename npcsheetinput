@@ -9,6 +9,8 @@
 //   (If using my TokeNotes script), and bar3 will be populated with the monster's AC.
 // !monster clear-all // Removes all automatically generated monsters.
 
+// February 2021 - Attempting to have this transfer data into npc sheet slots.
+
 
 // Misc. utility functions, common to my scripts.
 const stripHTML = (txt) => txt.replace(/<\/div>/ig,'\r').replace(/<[^>]*>/g,'');
@@ -390,7 +392,7 @@ MonsterManager.ProcessSpecialAttack = function(monster, character, str, misc) {
       }
     }
     if (attName != "")
-      MonsterManager.CreateAttackMacro(character, attName, attStr.replace("NAME", attName));
+      MonsterManager.CreateAttackMacro(character, attnpcName, attnpcStr.replace("NAME", attName));
     attName = ex = "";
     attStr = baseAttStr;
   }
@@ -422,11 +424,11 @@ MonsterManager.Generate = function(selected, monster) {
     token.set("represents", character.get("_id"));
     token.set("name", monster);
     // Set AC
-    token.set("bar3_value", getAttrByName(character.get("_id"), "ac"));
+    token.set("bar3_value", getAttrByName(character.get("_id"), "npcarmorclass"));
     // Process special qualities
-    var qualities = getAttrByName(character.get("_id"), "special_qualities");
+    var qualities = getAttrByName(character.get("_id"), "npcspecialqualities");
     if (qualities) {
-      var size = getAttrByName(character.get("_id"), "size") || 0;
+      var size = getAttrByName(character.get("_id"), "npcsize") || 0;
       if (size != 0) {
         size = parseInt(size) * -1;
         if (size < 0)
@@ -438,7 +440,7 @@ MonsterManager.Generate = function(selected, monster) {
     }
 
     // Set hitpoints in callback
-    sendChat(selected[i]._id, "/w gm [["+getAttrByName(character.get("_id"), "hitdie")+"]]", function(msg) {
+    sendChat(selected[i]._id, "/w gm [["+getAttrByName(character.get("_id"), "npchitdie")+"]]", function(msg) {
       var t = getObj("graphic", msg[0].who);
       if (typeof(msg[0]["inlinerolls"]) == "undefined") {
         MonsterManager.LogAndNotify("Failed to generate hitpoint roll for creature!");
@@ -465,10 +467,10 @@ on("chat:message", function(msg) {
     if (operation == "import" && playerIsGM(msg.playerid)) {
       var mmi = findObjs({                              
         _type: "handout",
-        name: importName
+        name: importnpcname
       });
       if (mmi.length != 1 || typeof(mmi[0]) == "undefined") {
-        MonsterManager.LogAndNotify("Failed to locate import handout! No handout named '"+importName+"' exists (Or more than one handout matching this name was found).");
+        MonsterManager.LogAndNotify("Failed to locate import handout! No handout named '"+importnpcname+"' exists (Or more than one handout matching this name was found).");
         return;
       }
       mmi = mmi[0];
@@ -500,7 +502,7 @@ on("chat:message", function(msg) {
           MonsterManager.LogAndNotify("Failed to look up " + JSON.stringify(allChars[i])+ " for deletion.");
           return;
         }
-        var name = character.get("name");
+        var name = character.get("npcname");
         if (/^y_.+$/g.exec(name)) {
           // Final safety check
           if (allChars[i].get("current") == MonsterManager.safetyValue) {
